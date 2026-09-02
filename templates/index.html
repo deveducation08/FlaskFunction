@@ -12,5 +12,22 @@
     <p>Feliz em te ver de novo!</p>
     {% endif %}
 </div>
+
 {{ wtf.quick_form(form) }}
+
+<h2>Relação de usuários cadastrados</h2>
+</br>
+<table class="table">
+    <tr>
+        <th>Nome do usuário</th>
+        <th>Função</th>
+    </tr>
+    {% for pessoa in pessoas %}
+    <tr>
+        <td>{{ pessoa.username }}</td>
+        <td>{{ pessoa.role.name }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 {% endblock %}
