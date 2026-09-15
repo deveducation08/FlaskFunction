@@ -16,7 +16,7 @@
 {{ wtf.quick_form(form) }}
 
 <h2>Relação de usuários cadastrados</h2>
-</br>
+
 <table class="table">
     <tr>
         <th>Nome do usuário</th>
@@ -25,7 +25,31 @@
     {% for pessoa in pessoas %}
     <tr>
         <td>{{ pessoa.username }}</td>
-        <td>{{ pessoa.role.name }}</td>
+        <td>{{ pessoa.role.name if pessoa.role else '—' }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Relação de funções cadastradas</h2>
+<p>Quantidade: {{ roles|length }}</p>
+
+<table class="table">
+    <tr>
+        <th>Funções</th>
+        <th>Usuários</th>
+    </tr>
+    {% for role in roles %}
+    <tr>
+        <td>{{ role.name }}</td>
+        <td>
+            <ol>
+                {% for user in role.users %}
+                    <li>{{ user.username }}</li>
+                {% else %}
+                    <li class="text-muted">Nenhum usuário</li>
+                {% endfor %}
+            </ol>
+        </td>
     </tr>
     {% endfor %}
 </table>
