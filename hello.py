@@ -1,4 +1,8 @@
+# importação biblioteca flask
+
 import os
+from dotenv import load_dotenv
+import requests
 from flask import Flask, render_template, session, redirect, url_for, request
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -8,19 +12,39 @@ from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
 app.config['SQLALCHEMY_DATABASE_URI'] =\
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['API_KEY'] = os.environ.get('API_KEY')
+app.config['API_URL'] = os.environ.get('API_URL')
+app.config['API_FROM'] = os.environ.get('API_FROM')
+
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+
+def send_simple_message(username):
+  	return requests.post(
+  		app.config['API_URL'],
+  		auth=("api", app.config['API_KEY']),
+  		data={"from": app.config['API_FROM'],
+			"to": "Norton Rodrigues Lima <norton.rodrigues@aluno.ifsp.edu.br>, Fábio Teixeira <flaskaulasweb@zohomail.com>",
+  			"subject": "Hello Norton Rodrigues Lima",
+  			"text": f"""Nome: Norton Rodrigues Lima Prontuário: PT3038017 Usuário cadastrado: {username}"""})
+
+# classes revertidas em tabelas
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -42,6 +66,8 @@ class User(db.Model):
         return '<User %r>' % self.username
 
 
+# campos formulários definidos por classes
+
 class NameForm(FlaskForm):
     name = StringField('Qual é o seu nome?', validators=[DataRequired()])
     role = SelectField('Qual é a sua função?', coerce=int)
@@ -62,6 +88,7 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+# função principal
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -76,6 +103,7 @@ def index():
             db.session.add(user)
             db.session.commit()
             session['known'] = False
+            send_simple_message(username=form.name.data)
         else:
             session['known'] = True
         session['name'] = form.name.data
