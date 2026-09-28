@@ -3,11 +3,11 @@
 import os
 from dotenv import load_dotenv
 import requests
-from flask import Flask, render_template, session, redirect, url_for, request
+from flask import Flask, render_template, session, redirect, url_for, request, flash
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField
+from wtforms import StringField, SubmitField, SelectField, BooleanField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -34,13 +34,23 @@ moment = Moment(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+# Criação de constantes para armazenar os valores e não precisar ficar repetindo
 
-def send_simple_message(username):
-  	return requests.post(
+EMAIL_NORTON = "Norton Rodrigues Lima <norton.rodrigues@aluno.ifsp.edu.br>"
+EMAIL_FABIO = "Fábio Teixeira <flaskaulasweb@zohomail.com>"
+
+
+def send_simple_message(username, enviar_fabio=False):
+
+    destinatarios = [EMAIL_NORTON]
+    if enviar_fabio:
+        destinatarios.append(EMAIL_FABIO)
+
+    return requests.post(
   		app.config['API_URL'],
   		auth=("api", app.config['API_KEY']),
   		data={"from": app.config['API_FROM'],
-			"to": "Norton Rodrigues Lima <norton.rodrigues@aluno.ifsp.edu.br>, Fábio Teixeira <flaskaulasweb@zohomail.com>",
+			"to": " , ".join(destinatarios),
   			"subject": "Hello Norton Rodrigues Lima",
   			"text": f"""Nome: Norton Rodrigues Lima Prontuário: PT3038017 Usuário cadastrado: {username}"""})
 
@@ -71,6 +81,7 @@ class User(db.Model):
 class NameForm(FlaskForm):
     name = StringField('Qual é o seu nome?', validators=[DataRequired()])
     role = SelectField('Qual é a sua função?', coerce=int)
+    enviar_fabio = BooleanField('Deseja enviar e-mail para flaskaulasweb@zohomail.com?')
     submit = SubmitField('Enviar')
 
 
@@ -103,7 +114,11 @@ def index():
             db.session.add(user)
             db.session.commit()
             session['known'] = False
-            send_simple_message(username=form.name.data)
+            send_simple_message(username=form.name.data, enviar_fabio=form.enviar_fabio.data)
+            if form.enviar_fabio.data:
+                flash('E-mail enviado para Norton Rodrigues Lima e Fábio Teixeira.')
+            else:
+                flash('E-mail enviado para Norton Rodrigues Lima.')
         else:
             session['known'] = True
         session['name'] = form.name.data
