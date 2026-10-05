@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Flasky{% endblock %}
+
+{% block page_content %}
+
+<div class="page-header">
+    <h1>E-mails enviados</h1>
+    <h5>Relação de e-mails enviados para o administrador do sistema, notificando o cadastro de novos usuários.</h5>
+</div>
+
+<table class="table">
+    <tr>
+        <th>De</th>
+        <th>Para</th>
+        <th>Assunto</th>
+        <th>Texto</th>
+        <th>Data/Hora</th>
+    </tr>
+    {% for email in emails %}
+    <tr>
+        <td>{{ email.remetente }}</td>
+        <td>{{ email.destinatario }}</td>
+        <td>{{ email.assunto }}</td>
+        <td>{{ email.texto }}</td>
+        <td>{{ email.data_envio.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="5">Nenhum e-mail enviado ainda.</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

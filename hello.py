@@ -11,6 +11,7 @@ from wtforms import StringField, SubmitField, SelectField, BooleanField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from datetime import datetime
 
 
 
@@ -46,13 +47,27 @@ def send_simple_message(username, enviar_fabio=False):
     if enviar_fabio:
         destinatarios.append(EMAIL_FABIO)
 
-    return requests.post(
-  		app.config['API_URL'],
-  		auth=("api", app.config['API_KEY']),
-  		data={"from": app.config['API_FROM'],
-			"to": " , ".join(destinatarios),
-  			"subject": "Hello Norton Rodrigues Lima",
-  			"text": f"""Nome: Norton Rodrigues Lima Prontuário: PT3038017 Usuário cadastrado: {username}"""})
+
+    assunto = "Hello Norton Rodrigues Lima"
+    texto = f"Nome: Norton Rodrigues Lima Prontuário: PT3038017 Usuário cadastrado: {username}"
+
+    resposta = requests.post(
+        app.config['API_URL'],
+        auth=("api", app.config['API_KEY']),
+        data={"from": app.config['API_FROM'],
+              "to": ", ".join(destinatarios),
+              "subject": assunto,
+              "text": texto})
+
+    if resposta.ok:
+        email = Email(remetente=username,
+                      destinatario=", ".join(destinatarios),
+                      assunto=assunto,
+                      texto=texto)
+        db.session.add(email)
+        db.session.commit()
+
+    return resposta
 
 # classes revertidas em tabelas
 
@@ -74,6 +89,20 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+# criação da model Email para armazenar os dados no banco e retornar na exibição do template
+
+class Email(db.Model):
+    __tablename__ = 'emails'
+    id = db.Column(db.Integer, primary_key=True)
+    remetente = db.Column(db.String(120))
+    destinatario = db.Column(db.String(300))
+    assunto = db.Column(db.String(200))
+    texto = db.Column(db.Text)
+    data_envio = db.Column(db.DateTime, default=datetime.now)
+
+    def __repr__(self):
+        return '<Email %r>' % self.assunto
 
 
 # campos formulários definidos por classes
@@ -134,3 +163,9 @@ def index():
     return render_template('index.html', form=form, pessoas=pessoas, roles=roles,
                            name=session.get('name'),
                            known=session.get('known', False))
+
+
+@app.route('/recebemails')
+def emails_enviados():
+    emails = Email.query.order_by(Email.data_envio.desc()).all()
+    return render_template('recebemails.html', emails=emails)
